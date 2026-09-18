@@ -256,6 +256,13 @@
         const FOLDERS = LIB.folders
         const state = { tab: 'folders', folderFilter: null, search: '' }
 
+        const API_BASE = location.origin
+        const authHeaders = (extra = {}) => {
+            const headers = { ...extra }
+            if (location.username) headers['Authorization'] = 'Basic ' + btoa(decodeURIComponent(location.username) + ':' + decodeURIComponent(location.password))
+            return headers
+        }
+
         const emptyState = document.getElementById('empty-state')
         const subBar = document.getElementById('sub-bar')
         const contentContainer = document.getElementById('content-container')
@@ -313,7 +320,7 @@
             })
             for (const v of currentList) {
                 if (v.duration != null) continue
-                fetch(`/api/meta/${v.id}`)
+                fetch(`${API_BASE}/api/meta/${v.id}`, { headers: authHeaders() })
                     .then((r) => (r.ok ? r.json() : null))
                     .then((d) => {
                         if (!d) return
@@ -642,7 +649,7 @@
         async function loadBrowse(path) {
             browseList.innerHTML = `<div class="text-text-muted text-sm py-6 text-center">Loading…</div>`
             try {
-                const res = await fetch('/api/browse' + (path ? '?path=' + encodeURIComponent(path) : ''))
+                const res = await fetch(`${API_BASE}/api/browse` + (path ? '?path=' + encodeURIComponent(path) : ''), { headers: authHeaders() })
                 if (!res.ok) {
                     const data = await res.json().catch(() => null)
                     const msg = data && data.error ? data.error : `Cannot open that folder (HTTP ${res.status}).`
@@ -686,9 +693,9 @@
             useBtn.disabled = true
             useBtn.textContent = 'Scanning…'
             try {
-                const res = await fetch('/api/folders', {
+                const res = await fetch(`${API_BASE}/api/folders`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ path: path.trim() }),
                 })
                 const data = await res.json().catch(() => ({}))
@@ -710,9 +717,9 @@
 
         async function removeFolder(path) {
             try {
-                const res = await fetch('/api/folders', {
+                const res = await fetch(`${API_BASE}/api/folders`, {
                     method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: authHeaders({ 'Content-Type': 'application/json' }),
                     body: JSON.stringify({ path }),
                 })
                 if (res.ok) { toast('Folder removed', 'success'); setTimeout(() => location.reload(), 700) }
