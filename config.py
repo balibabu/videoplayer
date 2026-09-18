@@ -24,6 +24,20 @@ def _as_bool(value, default=False):
     return (value or str(default)).strip().lower() in ("1", "true", "yes", "on")
 
 
+def _browse_root():
+    raw = (os.getenv("BROWSE_ROOT") or "").strip()
+    if not raw:
+        try:
+            return Path.home().resolve()
+        except (RuntimeError, OSError):
+            return Path("/")
+    try:
+        path = Path(raw).expanduser().resolve()
+        return path if path.is_dir() else Path("/")
+    except (RuntimeError, OSError, ValueError):
+        return Path("/")
+
+
 class Config:
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", "8080"))
@@ -38,7 +52,7 @@ class Config:
     SUPPORTED_EXTENSIONS = _parse_extensions(os.getenv("SUPPORTED_EXTENSIONS"))
 
     FOLDERS_FILE = Path(os.getenv("FOLDERS_FILE", str(BASE_DIR / ".folders.json"))).expanduser().resolve()
-    BROWSE_ROOT = Path(os.getenv("BROWSE_ROOT", str(Path.home()))).expanduser().resolve()
+    BROWSE_ROOT = _browse_root()
 
     THUMB_WIDTH = int(os.getenv("THUMB_WIDTH", "480"))
     THUMB_QUALITY = int(os.getenv("THUMB_QUALITY", "3"))

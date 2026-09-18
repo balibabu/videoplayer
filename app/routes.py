@@ -36,17 +36,20 @@ def api_browse():
         if raw:
             current = Path(raw).expanduser().resolve()
         else:
-            current = Path(current_app.config["BROWSE_ROOT"]).expanduser().resolve()
-    except (OSError, RuntimeError, ValueError):
-        abort(400)
+            current = Path(current_app.config["BROWSE_ROOT"])
+    except (OSError, RuntimeError, ValueError) as e:
+        current_app.logger.warning("browse: cannot resolve %r: %s", raw, e)
+        return jsonify({"error": f"Cannot resolve path: {e}"}), 400
     if not current.is_dir():
-        abort(404)
+        current_app.logger.warning("browse: not a directory: %s", current)
+        return jsonify({"error": f"Not a directory: {current}"}), 404
     exts = video.extensions()
     dirs = []
     try:
         entries = sorted(current.iterdir(), key=lambda p: p.name.lower())
-    except OSError:
-        abort(404)
+    except OSError as e:
+        current_app.logger.warning("browse: cannot list %s: %s", current, e)
+        return jsonify({"error": f"Cannot list directory: {e}"}), 400
     for entry in entries:
         if entry.name.startswith("."):
             continue

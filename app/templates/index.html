@@ -644,15 +644,17 @@
             try {
                 const res = await fetch('/api/browse' + (path ? '?path=' + encodeURIComponent(path) : ''))
                 if (!res.ok) {
-                    browseList.innerHTML = `<div class="text-text-muted text-sm py-6 text-center">Cannot open that folder.</div>`
+                    const data = await res.json().catch(() => null)
+                    const msg = data && data.error ? data.error : `Cannot open that folder (HTTP ${res.status}).`
+                    browseList.innerHTML = `<div class="text-red-400/80 text-sm py-6 text-center px-4">${escapeHtml(msg)}</div>`
                     return
                 }
                 browseState = await res.json()
                 folderInput.value = browseState.path
                 browseCwd.textContent = browseState.path
                 renderBrowse()
-            } catch {
-                browseList.innerHTML = `<div class="text-text-muted text-sm py-6 text-center">Failed to browse the server.</div>`
+            } catch (err) {
+                browseList.innerHTML = `<div class="text-red-400/80 text-sm py-6 text-center px-4">Failed to reach the server: ${escapeHtml(err.message)}</div>`
             }
         }
 
